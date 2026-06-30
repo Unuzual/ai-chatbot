@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>무물 — 무엇이든 물어보세요</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css" />
+  <style>
+    :root {
+      --bg: #13150f;
+      --surface: #1b1e16;
+      --surface-2: #21261a;
+      --border: #313626;
+      --ink: #f1f2e9;
+      --muted: #9b9f8d;
+      --accent: #aeba83;        /* 카키/세이지 */
+      --accent-strong: #c4cf94;
+      --accent-ink: #15170f;    /* 액센트 위 글자 */
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; }
+    body {
+      font-family: "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", sans-serif;
+      background:
+        radial-gradient(900px 500px at 80% -10%, rgba(174,186,131,0.10), transparent 60%),
+        var(--bg);
+      color: var(--ink);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    .wrap { max-width: 760px; margin: 0 auto; padding: 28px 20px 64px; }
+
+    /* ── 상단 바 ── */
+    .topbar { display: flex; align-items: center; justify-content: space-between; }
+    .brand { display: flex; align-items: center; gap: 10px; font-weight: 700; letter-spacing: -0.01em; }
+    .brand .dot {
+      width: 22px; height: 22px; border-radius: 7px;
+      background: var(--accent); box-shadow: 0 0 0 4px rgba(174,186,131,0.15);
+    }
+    #reset {
+      background: transparent; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: 7px 14px; font-size: 13px; cursor: pointer;
+      font-family: inherit; transition: color .15s, border-color .15s;
+    }
+    #reset:hover { color: var(--ink); border-color: var(--accent); }
+
+    /* ── 히어로 ── */
+    .hero { padding: 56px 4px 36px; }
+    .eyebrow {
+      font-size: 13px; letter-spacing: 0.18em; text-transform: uppercase;
+      color: var(--accent); font-weight: 600; margin-bottom: 18px;
+    }
+    .hero h1 {
+      margin: 0;
+      font-size: clamp(2.6rem, 9vw, 4.4rem);
+      line-height: 1.02; font-weight: 800; letter-spacing: -0.03em;
+    }
+    .hero h1 .accent { color: var(--accent); }
+    .caret {
+      display: inline-block; width: 0.06em; height: 0.92em;
+      background: var(--accent); margin-left: 0.06em;
+      transform: translateY(0.12em); animation: blink 1.05s steps(1) infinite;
+    }
+    @keyframes blink { 50% { opacity: 0; } }
+    .hero p {
+      margin: 22px 0 0; max-width: 46ch;
+      color: var(--muted); font-size: clamp(1rem, 2.4vw, 1.15rem); line-height: 1.6;
+    }
+
+    /* ── 채팅 패널 ── */
+    .panel {
+      margin-top: 30px;
+      background: linear-gradient(180deg, var(--surface), #181b14);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 30px 70px -40px rgba(0,0,0,0.9);
+    }
+    .panel-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 14px 18px; border-bottom: 1px solid var(--border);
+      color: var(--muted); font-size: 13px;
+    }
+    .panel-head .traffic { display: flex; gap: 6px; margin-right: 6px; }
+    .panel-head .traffic i { width: 10px; height: 10px; border-radius: 50%; background: #3a4030; display: block; }
+    .panel-head .traffic i:first-child { background: var(--accent); }
+
+    #answer {
+      height: 46vh; min-height: 280px; max-height: 560px;
+      overflow-y: auto; padding: 22px 18px; scroll-behavior: smooth;
+    }
+    .msg { margin: 14px 0; display: flex; }
+    .msg .bubble {
+      padding: 11px 15px; border-radius: 16px; max-width: 82%;
+      white-space: pre-wrap; line-height: 1.6; font-size: 15px;
+    }
+    .msg.user { justify-content: flex-end; }
+    .msg.user .bubble {
+      background: var(--accent); color: var(--accent-ink);
+      border-bottom-right-radius: 5px; font-weight: 500;
+    }
+    .msg.bot .bubble {
+      background: var(--surface-2); color: var(--ink);
+      border: 1px solid var(--border); border-bottom-left-radius: 5px;
+    }
+    .msg.bot.pending .bubble { color: var(--muted); }
+
+    /* 빈 화면 안내 */
+    .empty { color: var(--muted); padding: 8px 4px; }
+    .empty .lead { font-size: 15px; margin-bottom: 16px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip {
+      background: var(--surface-2); color: var(--ink);
+      border: 1px solid var(--border); border-radius: 999px;
+      padding: 9px 14px; font-size: 14px; cursor: pointer;
+      font-family: inherit; transition: border-color .15s, transform .1s;
+    }
+    .chip:hover { border-color: var(--accent); transform: translateY(-1px); }
+
+    /* 입력 영역 */
+    .composer {
+      display: flex; gap: 10px; padding: 14px;
+      border-top: 1px solid var(--border); background: rgba(0,0,0,0.18);
+    }
+    #input {
+      flex: 1; padding: 14px 16px; font-size: 15px; font-family: inherit;
+      color: var(--ink); background: var(--surface-2);
+      border: 1px solid var(--border); border-radius: 12px;
+    }
+    #input::placeholder { color: #6f7363; }
+    #input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 0 3px rgba(174,186,131,0.18); }
+    #send {
+      padding: 0 22px; border: none; border-radius: 12px;
+      background: var(--accent); color: var(--accent-ink);
+      font-size: 15px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: background .15s;
+    }
+    #send:hover { background: var(--accent-strong); }
+    #send:disabled { background: #5d6450; color: #aab09a; cursor: default; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .caret { animation: none; }
+      #answer { scroll-behavior: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand"><span class="dot"></span> 무물</div>
+      <button id="reset">대화 초기화</button>
+    </div>
+
+    <header class="hero">
+      <div class="eyebrow">AI 어시스턴트</div>
+      <h1>무엇이든<br /><span class="accent">물어보세요</span><span class="caret"></span></h1>
+      <p>궁금한 걸 입력하면 무물이 바로 답합니다. 대화의 앞 내용을 기억하니 이어서 물어봐도 돼요.</p>
+    </header>
+
+    <section class="panel">
+      <div class="panel-head">
+        <span class="traffic"><i></i><i></i><i></i></span>
+        대화
+      </div>
+      <div id="answer"></div>
+      <div class="composer">
+        <input id="input" type="text" placeholder="무엇이든 물어보세요…" autofocus />
+        <button id="send">보내기</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    const input = document.getElementById("input");
+    const sendBtn = document.getElementById("send");
+    const answer = document.getElementById("answer");
+    const resetBtn = document.getElementById("reset");
+
+    const EXAMPLES = ["오늘 점심 메뉴 추천해줘", "이메일 정중하게 다듬어줘", "JavaScript로 할 일 목록 만드는 법"];
+
+    // 대화 기록을 브라우저에 저장 (새로고침해도 유지)
+    let history = JSON.parse(localStorage.getItem("chatHistory") || "[]");
+
+    function saveHistory() {
+      localStorage.setItem("chatHistory", JSON.stringify(history));
+    }
+
+    // 말풍선 하나를 화면에 추가하고 그 요소를 돌려줌
+    function addBubble(role, text, pending = false) {
+      const wrap = document.createElement("div");
+      wrap.className = "msg " + (role === "user" ? "user" : "bot") + (pending ? " pending" : "");
+      const bubble = document.createElement("div");
+      bubble.className = "bubble";
+      bubble.textContent = text;
+      wrap.appendChild(bubble);
+      answer.appendChild(wrap);
+      answer.scrollTop = answer.scrollHeight;
+      return wrap;
+    }
+
+    // 대화가 없을 때 보여줄 예시 안내
+    function renderEmpty() {
+      const box = document.createElement("div");
+      box.className = "empty";
+      const lead = document.createElement("div");
+      lead.className = "lead";
+      lead.textContent = "이렇게 물어보세요";
+      const chips = document.createElement("div");
+      chips.className = "chips";
+      EXAMPLES.forEach((text) => {
+        const chip = document.createElement("button");
+        chip.className = "chip";
+        chip.textContent = text;
+        chip.addEventListener("click", () => { input.value = text; send(); });
+        chips.appendChild(chip);
+      });
+      box.appendChild(lead);
+      box.appendChild(chips);
+      answer.appendChild(box);
+    }
+
+    // 저장된 기록을 화면에 다시 그림
+    function render() {
+      answer.innerHTML = "";
+      if (history.length === 0) { renderEmpty(); return; }
+      history.forEach((m) => addBubble(m.role, m.content));
+    }
+
+    async function send() {
+      const message = input.value.trim();
+      if (!message) return;
+
+      if (history.length === 0) answer.innerHTML = ""; // 예시 안내 지우기
+      input.value = "";
+      sendBtn.disabled = true;
+      addBubble("user", message);
+      const pending = addBubble("bot", "생각 중…", true);
+
+      try {
+        const res = await fetch("/api/chat", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          // 지금까지의 기록 + 이번 메시지를 함께 전송
+          body: JSON.stringify({ history, message }),
+        });
+        const data = await res.json();
+        const reply = res.ok ? data.reply : (data.error || "오류가 발생했습니다.");
+
+        pending.classList.remove("pending");
+        pending.querySelector(".bubble").textContent = reply;
+
+        if (res.ok) {
+          history.push({ role: "user", content: message });
+          history.push({ role: "assistant", content: reply });
+          saveHistory();
+        }
+      } catch (e) {
+        pending.classList.remove("pending");
+        pending.querySelector(".bubble").textContent = "서버에 연결하지 못했습니다.";
+      } finally {
+        sendBtn.disabled = false;
+        input.focus();
+      }
+    }
+
+    function reset() {
+      history = [];
+      saveHistory();
+      render();
+      input.focus();
+    }
+
+    sendBtn.addEventListener("click", send);
+    resetBtn.addEventListener("click", reset);
+    input.addEventListener("keydown", (e) => {
+      // 한글 등 IME 조합 중에 눌린 Enter는 무시 (중복 전송 방지)
+      if (e.key === "Enter" && !e.isComposing) send();
+    });
+
+    render(); // 페이지 열 때 저장된 대화 복원
+  </script>
+</body>
+</html>
